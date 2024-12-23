@@ -1,17 +1,20 @@
-# Default Steam launcher installation path. If there are any changes, please adjust yourself!
-# 默認Steam啟動器安裝路徑。若有更動，請自行調整！
-
-$STEAM_PATH = "C:\Program Files (x86)\Steam"
-
-
-### Please DO NOT change the following content at will!
-### 以下內容請勿隨意更動！
-
-if (-Not (Test-Path -Path $STEAM_PATH)) {
-    Write-Host "未發現 Steam ，腳本已終止。"
-    cmd /c pause
-    exit
+# Function to get Steam installation path from registry
+function Get-SteamPath {
+    try {
+        $steamPath = (Get-ItemProperty -Path "HKCU:\Software\Valve\Steam").SteamPath
+        if (-Not (Test-Path -Path $steamPath)) {
+            throw "未找到有效的 Steam 路徑。"
+        }
+        return $steamPath
+    } catch {
+        Write-Host $_.Exception.Message
+        cmd /c pause
+        exit
+    }
 }
+
+# Obtain Steam installation path from registry
+$STEAM_PATH = Get-SteamPath
 
 # Read the "libraryfolders.vdf" file to get all Steam library directories
 $libraryFoldersPath = Join-Path $STEAM_PATH "steamapps\libraryfolders.vdf"
