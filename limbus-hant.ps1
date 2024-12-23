@@ -9,6 +9,7 @@ $STEAM_PATH = "C:\Program Files (x86)\Steam"
 
 if (-Not (Test-Path -Path $STEAM_PATH)) {
     Write-Host "未發現 Steam ，腳本已終止。"
+    cmd /c pause
     exit
 }
 
@@ -29,6 +30,7 @@ foreach ($folder in $libraryFolders) {
 }
 if (-Not ($gamePath)) {
     Write-Output "未找到遊戲 Limbus Company 的安裝目錄，腳本已終止。"
+    cmd /c pause
     exit
 }
 Write-Output "已找到遊戲 Limbus Company 的安裝目錄，繁體中文語言包將安裝於: $gamePath"
@@ -68,3 +70,5 @@ for ($i = 0; $i -lt $apiUrls.Length; $i++) {
     Expand-7Zip -ArchiveFileName $fileName -TargetPath $gamePath
     Remove-Item $fileName
 }
+Write-Output "Limbus Company 繁體中文語言包已順利安裝。"
+cmd /c pause
