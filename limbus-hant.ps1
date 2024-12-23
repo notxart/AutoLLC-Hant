@@ -20,7 +20,6 @@ $STEAM_PATH = Get-SteamPath
 $libraryFoldersPath = Join-Path $STEAM_PATH "steamapps\libraryfolders.vdf"
 $libraryFoldersContent = Get-Content -Raw $libraryFoldersPath
 $libraryFolders = [regex]::Matches($libraryFoldersContent, '"path"\s+"([^"]+)"') | ForEach-Object { $_.Groups[1].Value }
-$libraryFolders += $STEAM_PATH
 
 # Find the installation path of the game Limbus Company
 $gamePath = $null
