@@ -1,3 +1,5 @@
+$DEBUG_MODE = $false
+
 # Function to get Steam installation path from registry
 function Get-SteamPath {
     try {
@@ -6,9 +8,9 @@ function Get-SteamPath {
             throw "未找到有效的 Steam 路徑。"
         }
         return $steamPath
-    } catch {
+    }
+    catch {
         Write-Host $_.Exception.Message
-        cmd /c pause
         exit
     }
 }
@@ -32,7 +34,6 @@ foreach ($folder in $libraryFolders) {
 }
 if (-Not ($gamePath)) {
     Write-Output "未找到遊戲 Limbus Company 的安裝目錄，腳本已終止。"
-    cmd /c pause
     exit
 }
 Write-Output "已找到遊戲 Limbus Company 的安裝目錄，繁體中文語言包將安裝於: $gamePath"
@@ -44,15 +45,40 @@ if (-Not (Get-Command -Module 7Zip4Powershell -errorAction SilentlyContinue)) {
 
 # Define GitHub API URLs and download targets
 $apiUrls = @(
-    "https://api.github.com/repos/LocalizeLimbusCompany/BepInEx_For_LLC/releases/latest",
-    "https://api.github.com/repos/SmallYuanSY/LLC_ChineseFontAsset/releases/latest",
-    "https://api.github.com/repos/SmallYuanSY/LocalizeLimbusCompany_TW/releases/latest"
+    "https://api.github.com/repos/LocalizeLimbusCompany/BepInEx_For_LLC/releases",
+    "https://api.github.com/repos/SmallYuanSY/LLC_ChineseFontAsset/releases",
+    "https://api.github.com/repos/SmallYuanSY/LocalizeLimbusCompany_TW/releases"
 )
 $targets = @(
     "https.*BepInEx-IL2CPP-x64.*.7z",
     "https.*chinesefont_BIE.*.7z",
     "https.*LimbusLocalize_BIE.*.7z"
 )
+
+# Define the path to the history file
+$historyFilePath = Join-Path $gamePath "AutoLLC.history"
+
+# Define functions for reading/writing history file
+function Read-HistoryFile {
+    $historyHashTable = @{}
+    if (Test-Path $historyFilePath) {
+        $historyData = Get-Content -Path $historyFilePath -Raw | ConvertFrom-Json
+        foreach ($key in $historyData.PSObject.Properties.Name) {
+            $historyHashTable[$key] = $historyData.$key
+        }
+    }
+    return $historyHashTable
+}
+function Write-HistoryFile {
+    param (
+        [Parameter(Mandatory = $true)]
+        [hashtable]$record
+    )
+    $record | ConvertTo-Json -Compress | Set-Content -Path $historyFilePath
+}
+
+# Read the history file
+$history = Read-HistoryFile
 
 # Iterate through downloading and decompressing each target
 for ($i = 0; $i -lt $apiUrls.Length; $i++) {
@@ -64,13 +90,30 @@ for ($i = 0; $i -lt $apiUrls.Length; $i++) {
     $json = $response.Content | ConvertFrom-Json
 
     # Search URLs with .7z using regex
-    $url = ($json.assets.browser_download_url | Select-String -Pattern $target).Matches.Value
+    foreach ($asset in $json.assets) {
+        if ($asset -match $target) {
+            $url = $asset.browser_download_url
+            if ($DEBUG_MODE) { Write-Output "URL: $url" }
+            break
+        }
+    }
+
+    # Check if the current URL matches the one in the history file
+    if ($history.ContainsKey($apiUrl) -and $history[$apiUrl] -eq $url) {
+        if ($DEBUG_MODE) { Write-Output "Match URL: $apiUrl" } else { continue }
+    }
 
     # Download, unzip, and remove compressed files
     $fileName = "limbus_i18n_$i.7z"
     Invoke-WebRequest $url -OutFile $fileName
     Expand-7Zip -ArchiveFileName $fileName -TargetPath $gamePath
-    Remove-Item $fileName
+    if (-Not $DEBUG_MODE) { Remove-Item $fileName }
+
+    # Update the history with the new URL
+    $history[$apiUrl] = $url
 }
+
+# Write the updated history file
+Write-HistoryFile -record $history
+
 Write-Output "Limbus Company 繁體中文語言包已順利安裝。"
-cmd /c pause
