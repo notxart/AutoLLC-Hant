@@ -2,9 +2,9 @@
 
 ## 簡介 / Abstract
 
-一款**單命令式安裝腳本**，用於簡化**安裝邊獄巴士繁體中文語言包**時所需的複雜步驟。
+一款**單命令式安裝腳本**，用於簡化**安裝邊獄巴士繁體中文語言包**時所需的複雜步驟，並且**現在也可以作為遊戲啟動器使用**！
 
-A **single-command installation script** that simplifies the complex steps required to **install the Limbus Company Traditional Chinese language pack**.
+A **single-command installation script** that simplifies the complex steps required to **install the Limbus Company Traditional Chinese language pack**. Additionally, it now **supports being used as a game launcher**!
 
 ## 使用方法
 

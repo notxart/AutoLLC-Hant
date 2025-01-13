@@ -113,7 +113,7 @@ for ($i = 0; $i -lt $apiUrls.Length; $i++) {
     $history[$apiUrl] = $url
 }
 
-# Write the updated history file
+# Write the updated history file and start the game.
 Write-HistoryFile -record $history
-
-Write-Output "Limbus Company 繁體中文語言包已順利安裝。"
+Write-Output "Limbus Company 繁體中文語言包已順利安裝，即將為您啟動遊戲。"
+Start-Process -FilePath (Join-Path $gamePath "LimbusCompany.exe")
