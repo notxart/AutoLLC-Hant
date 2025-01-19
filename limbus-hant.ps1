@@ -17,11 +17,8 @@ function Get-SteamPath {
     }
 }
 
-# Obtain Steam installation path from registry
-$STEAM_PATH = Get-SteamPath
-
 # Read the "libraryfolders.vdf" file to get all Steam library directories
-$libraryFoldersPath = Join-Path $STEAM_PATH "steamapps\libraryfolders.vdf"
+$libraryFoldersPath = Join-Path $(Get-SteamPath) "steamapps\libraryfolders.vdf"
 $libraryFoldersContent = Get-Content -Raw $libraryFoldersPath
 $libraryFolders = [regex]::Matches($libraryFoldersContent, '"path"\s+"([^"]+)"') | ForEach-Object { $_.Groups[1].Value }
 
@@ -40,10 +37,9 @@ if (-Not ($gamePath)) {
 }
 Write-Host "已找到遊戲 Limbus Company 的安裝目錄，繁體中文語言包將安裝於: $gamePath"
 
+# Check if the necessary module 7Zip4Powershell is installed
 try {
-    # Check if 7Zip4Powershell module is installed
     if (-Not (Get-Command -Module 7Zip4Powershell -ErrorAction SilentlyContinue)) {
-        # Install 7Zip4Powershell module with CurrentUser scope
         Install-Module -Name 7Zip4Powershell -Scope CurrentUser -Force
     }
 }
@@ -54,9 +50,9 @@ catch {
 
 # Define GitHub API URLs and download targets
 $apiUrls = @(
-    "https://api.github.com/repos/LocalizeLimbusCompany/BepInEx_For_LLC/releases/latest",
-    "https://api.github.com/repos/SmallYuanSY/LLC_ChineseFontAsset/releases/latest",
-    "https://api.github.com/repos/SmallYuanSY/LocalizeLimbusCompany_TW/releases/latest"
+    "LocalizeLimbusCompany/BepInEx_For_LLC",
+    "SmallYuanSY/LLC_ChineseFontAsset",
+    "SmallYuanSY/LocalizeLimbusCompany_TW"
 )
 $targets = @(
     "https.*BepInEx-IL2CPP-x64.*.7z",
@@ -91,20 +87,31 @@ $history = Read-HistoryFile
 
 # Iterate through downloading and decompressing each target
 for ($i = 0; $i -lt $apiUrls.Length; $i++) {
-    $apiUrl = $apiUrls[$i]
+    # Progress Bar (SilentlyContinue to avoid slowing down Invoke-WebRequest)
+    $ProgressPreference = "Continue"
+    Write-Progress -Activity "Update Modules:" -Status "$($apiUrls[$i])" -PercentComplete (($i + 1) / $apiUrls.Length * 100)
+    $ProgressPreference = "SilentlyContinue"
+
+    $apiUrl = "https://api.github.com/repos/$($apiUrls[$i])/releases/latest"
     $target = $targets[$i]
 
-    # Obtain the latest version of JSON data through Invoke-WebRequest
-    $response = Invoke-WebRequest -Uri $apiUrl -UseBasicParsing
-    $json = $response.Content | ConvertFrom-Json
+    try {
+        # Obtain the latest version of JSON data through Invoke-WebRequest
+        $response = Invoke-WebRequest -Uri $apiUrl -UseBasicParsing
+        $json = $response.Content | ConvertFrom-Json
 
-    # Search URLs with .7z using regex
-    foreach ($asset in $json.assets) {
-        if ($asset -match $target) {
-            $url = $asset.browser_download_url
-            Write-Debug "Download URL:`t$url"
-            break
+        # Search URLs with .7z using regex
+        foreach ($asset in $json.assets) {
+            if ($asset -match $target) {
+                $url = $asset.browser_download_url
+                Write-Debug "Download URL:`t$url"
+                break
+            }
         }
+    }
+    catch {
+        Write-Warning "取得 GitHub API 資料時發生異常，很可能是頻繁使用該腳本導致。若您已安裝繁體中文語言包，請忽略該警告；若您尚未安裝，請稍後嘗試。詳細資訊: `n$_"
+        break
     }
 
     # Check if the current URL matches the one in the history file
@@ -120,9 +127,9 @@ for ($i = 0; $i -lt $apiUrls.Length; $i++) {
 
     # Update the history with the new URL
     $history[$apiUrl] = $url
+    if (($i + 1) -eq $apiUrls.Length) { Write-HistoryFile -record $history }
 }
 
-# Write the updated history file and start the game.
-Write-HistoryFile -record $history
+# Start the game.
 Write-Host "Limbus Company 繁體中文語言包已順利安裝，即將為您啟動遊戲。"
-Start-Process -FilePath (Join-Path $gamePath "LimbusCompany.exe")
+if (-Not $Debug) { Start-Process -FilePath (Join-Path $gamePath "LimbusCompany.exe") }
