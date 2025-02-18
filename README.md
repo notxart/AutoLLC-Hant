@@ -1,3 +1,6 @@
+## 注意！該專案已經歸檔，並且不再維護，現在開始請使用新啟動器：[AutoLLC](https://github.com/notxart/AutoLLC)
+## Notice! This project has been archived and is no longer maintained. Please use the new launcher now: [AutoLLC](https://github.com/notxart/AutoLLC)
+
 # AutoLLC-Hant
 
 ## 簡介 / Abstract
